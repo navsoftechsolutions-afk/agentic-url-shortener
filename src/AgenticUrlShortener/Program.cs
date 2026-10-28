@@ -1,0 +1,23 @@
+using AgenticUrlShortener;
+using Microsoft.AspNetCore.Http.HttpResults;
+var builder=WebApplication.CreateBuilder(args);
+var dataDir=Environment.GetEnvironmentVariable("DATA_DIR")??Path.Combine(builder.Environment.ContentRootPath,"data");
+builder.Services.AddSingleton(new JsonStore<UrlData>(Path.Combine(dataDir,"urls.json")));
+builder.Services.AddSingleton(new JsonStore<WorkflowCollection>(Path.Combine(dataDir,"workflows.json")));
+builder.Services.AddSingleton<UrlService>();builder.Services.AddSingleton<WorkflowEngine>();
+var app=builder.Build();
+app.MapGet("/",()=>Results.Ok(new{Service="Agentic URL Shortener",Version="1.0",Docs="/docs"}));
+app.MapGet("/docs",()=>Results.Content("""<!doctype html><html><head><title>Agentic URL Shortener</title></head><body><h1>Agentic URL Shortener API</h1><p>See README.md for requests and examples.</p><ul><li>POST /api/urls</li><li>GET /{code}</li><li>GET /api/urls/{code}/analytics</li><li>DELETE /api/urls/{code}</li><li>POST /api/workflows</li><li>GET /api/workflows/{id}</li><li>GET /api/workflows/{id}/audit</li><li>POST /api/workflows/{id}/approval</li><li>POST /api/workflows/{id}/replan</li><li>GET /api/workflows/metrics</li></ul></body></html>""","text/html"));
+app.MapPost("/api/urls",async (CreateUrlRequest req,UrlService svc,HttpContext ctx)=>{try{var link=await svc.Create(req);return Results.Created($"/api/urls/{link.Code}/analytics",new{link.Code,ShortUrl=$"{ctx.Request.Scheme}://{ctx.Request.Host}/{link.Code}",link.Url,link.ExpiresUtc});}catch(ArgumentException ex){return Results.BadRequest(new{error=ex.Message});}});
+app.MapGet("/api/urls/{code}/analytics",async (string code,UrlService svc)=>{var x=await svc.Analytics(code);return x==null?Results.NotFound():Results.Ok(x);});
+app.MapDelete("/api/urls/{code}",async (string code,UrlService svc)=>await svc.Disable(code)?Results.NoContent():Results.NotFound());
+app.MapPost("/api/workflows",async (WorkflowRequest req,WorkflowEngine engine)=>{try{var w=await engine.Create(req);return Results.Created($"/api/workflows/{w.Id}",w);}catch(ArgumentException ex){return Results.BadRequest(new{error=ex.Message});}});
+app.MapGet("/api/workflows",async (WorkflowEngine e)=>Results.Ok(await e.All()));
+app.MapGet("/api/workflows/metrics",async (WorkflowEngine e)=>Results.Ok(await e.Metrics()));
+app.MapGet("/api/workflows/{id}",async (string id,WorkflowEngine e)=>await e.Get(id) is {} w?Results.Ok(w):Results.NotFound());
+app.MapGet("/api/workflows/{id}/audit",async (string id,WorkflowEngine e)=>await e.Get(id) is {} w?Results.Ok(w.Audit):Results.NotFound());
+app.MapPost("/api/workflows/{id}/approval",async (string id,ApprovalRequest req,WorkflowEngine e)=>{try{return Results.Ok(await e.Approve(id,req));}catch(KeyNotFoundException){return Results.NotFound();}catch(Exception ex) when(ex is ArgumentException or InvalidOperationException){return Results.BadRequest(new{error=ex.Message});}});
+app.MapPost("/api/workflows/{id}/replan",async (string id,WorkflowRequest req,WorkflowEngine e)=>{try{return Results.Ok(await e.Replan(id,req.Requirement));}catch(KeyNotFoundException){return Results.NotFound();}catch(Exception ex) when(ex is ArgumentException or InvalidOperationException){return Results.BadRequest(new{error=ex.Message});}});
+app.MapGet("/{code}",async (string code,UrlService svc)=>await svc.Resolve(code) is {} link?Results.Redirect(link.Url,permanent:false):Results.NotFound());
+app.Run();
+public partial class Program { }

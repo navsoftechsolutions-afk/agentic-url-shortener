@@ -1,0 +1,15 @@
+@host = http://localhost:5080
+### Create short URL
+POST {{host}}/api/urls
+Content-Type: application/json
+
+{"url":"https://example.com","expiresInDays":30}
+
+### Start agent workflow
+POST {{host}}/api/workflows
+Content-Type: application/json
+
+{"requirement":"Create a short URL service with analytics","scenario":"greenfield","simulateTestFailure":true}
+
+### Metrics
+GET {{host}}/api/workflows/metrics
