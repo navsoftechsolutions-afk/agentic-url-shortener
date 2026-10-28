@@ -1,0 +1,4 @@
+await ContractChecks.PolicyAndValidation();
+await ContractChecks.ExpiryPersistenceAndDisable();
+await ContractChecks.ConcurrentClicksAndUniqueCodes();
+Console.WriteLine("CONTRACT_CHECKS_PASSED=3");

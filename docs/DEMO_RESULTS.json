@@ -1,0 +1,155 @@
+{
+  "serviceVersion": "2.0",
+  "failureDemonstrations": true,
+  "workflows": [
+    {
+      "id": "04fe83f5fd01479aaaa0f435c6d6e39f",
+      "scenario": "greenfield",
+      "status": "Completed",
+      "revision": 1,
+      "retries": 1,
+      "rollbacks": 0,
+      "fallbacks": 0,
+      "reviewDigest": "86aafc0e34a7e8107c484ea5de7c803456b2bd953a2e15e7c3048ace57fdba24",
+      "validation": {
+        "Runner": "dotnet test",
+        "Total": 3,
+        "Passed": 3,
+        "Failed": 0,
+        "DurationMs": 4177.5385,
+        "Implementation": "fe1452cd291eda3bb7c38a3137aa10f0999b31bd0cec0127ba0c51e000dada15"
+      },
+      "auditEvents": [
+        "approval_required",
+        "approved",
+        "complete",
+        "created",
+        "error",
+        "retry",
+        "review_sealed",
+        "start",
+        "success"
+      ]
+    },
+    {
+      "id": "32963e1e74e444ab9f48b07f579a1fe8",
+      "scenario": "brownfield",
+      "status": "Completed",
+      "revision": 2,
+      "retries": 0,
+      "rollbacks": 1,
+      "fallbacks": 0,
+      "reviewDigest": "f0a2ad7de9fa739c386373a631b198ab47ddeb443d5ffb32936280c761e77cd5",
+      "validation": {
+        "Runner": "dotnet test",
+        "Total": 3,
+        "Passed": 3,
+        "Failed": 0,
+        "DurationMs": 2755.5968,
+        "Implementation": "b5f5a922fea20236d7a59248820f2d148ecc399c219d30debb799ed0f249d1e7"
+      },
+      "auditEvents": [
+        "approval_required",
+        "approved",
+        "complete",
+        "created",
+        "graph_changed",
+        "replan",
+        "review_sealed",
+        "start",
+        "success"
+      ]
+    },
+    {
+      "id": "18128aeab0d9419e9321ac9c16757989",
+      "scenario": "ambiguous",
+      "status": "Rejected",
+      "revision": 2,
+      "retries": 0,
+      "rollbacks": 2,
+      "fallbacks": 0,
+      "reviewDigest": "8f0ce8233394b622fcf43d7eb3ca8e6d17da0c65c23fc5289b1b17764e1cb1f3",
+      "validation": {
+        "Runner": "dotnet test",
+        "Total": 3,
+        "Passed": 3,
+        "Failed": 0,
+        "DurationMs": 2703.4297,
+        "Implementation": "8bb5c4a35d962e4bf4322ea1f9453591c147f50ae08d39384da24f0a43fb719b"
+      },
+      "auditEvents": [
+        "approval_required",
+        "clarification_required",
+        "created",
+        "replan",
+        "review_sealed",
+        "rollback",
+        "start",
+        "success"
+      ]
+    },
+    {
+      "id": "7c0a3b7e545047a5aa7e3e2f327fca0e",
+      "scenario": "greenfield",
+      "status": "SafeStopped",
+      "revision": 1,
+      "retries": 2,
+      "rollbacks": 1,
+      "fallbacks": 0,
+      "reviewDigest": null,
+      "validation": null,
+      "auditEvents": [
+        "created",
+        "error",
+        "retry",
+        "safe_stop",
+        "start",
+        "success"
+      ]
+    },
+    {
+      "id": "2134a8757db94adca100f4eb8c68747e",
+      "scenario": "greenfield",
+      "status": "Rejected",
+      "revision": 1,
+      "retries": 2,
+      "rollbacks": 1,
+      "fallbacks": 1,
+      "reviewDigest": "84121faeda39283999e4bbad54b891248dcd4362399fe0ba3227bd257f81af55",
+      "validation": {
+        "Runner": "package-free shared contract verifier",
+        "Total": 3,
+        "Passed": 3,
+        "Failed": 0,
+        "DurationMs": 2266.7297,
+        "PrimaryUnavailable": true,
+        "Implementation": "00a5f9311c66764f8b81c4e48c9fe89cff2e7d36db13fbe6416d0c5e3681cbe9"
+      },
+      "auditEvents": [
+        "approval_required",
+        "created",
+        "error",
+        "fallback",
+        "retry",
+        "review_sealed",
+        "rollback",
+        "start",
+        "success"
+      ]
+    }
+  ],
+  "metrics": {
+    "total": 10,
+    "legacyWorkflows": 3,
+    "completed": 4,
+    "successRate": 0.4,
+    "retryFrequency": 10,
+    "rollbackFrequency": 14,
+    "fallbackFrequency": 2,
+    "recoveredIncidents": 4,
+    "unrecoveredIncidents": 2,
+    "meanTimeToRecoveryMs": 3497.3002500000002,
+    "meanEndToEndLatencyMs": 3921.3092999999994,
+    "note": "MTTR measures first failed attempt to successful retry/fallback per node/revision; unresolved incidents are excluded. Latency includes human wait."
+  }
+}

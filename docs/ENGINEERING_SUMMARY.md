@@ -1,17 +1,17 @@
 # Engineering summary
 
-**Objective:** A reviewable .NET 8 URL shortener and bounded agentic SDLC orchestration demonstration.
+**Objective:** Transform a supported URL-shortener requirement into generated, executed and reviewable engineering output under explicit human governance.
 
-**Key decisions:** Minimize setup with .NET and file-based persistence. Model tasks as a dependency DAG with durable artifacts, parallel branches, synchronization, retries and human-controlled release-readiness. No third-party LLM key required; this keeps the demo reproducible but limits autonomy.
+**Plan and rationale:** Keep the stack reproducible with .NET 8 and local persistence. Use a dependency graph with concurrent branches and joins; record immutable-by-convention stage evidence and dependency hashes; generate trusted candidate code outside the maintained checkout; validate it with real tools; bind a separate reviewer's decision to the exact revision and evidence digest.
 
-**Artifacts:** HTTP service, workflow engine, xUnit tests, architecture, three scenarios, setup/CLI instructions, audit and metrics endpoints.
+**Implemented artifacts:** URL API with persisted click analytics, expiration and disable; requirement normalization and clarification; source inspection and impact evidence; dynamic brownfield compatibility gate; candidate source, feature policy, API schemas, contract tests and review documents; real dotnet execution; bounded retry, restricted fallback, quarantine/manifest revocation and safe-stop; role-authenticated control APIs; hash-chain journals, revision history and incident-based metrics; API integration tests and a reproducible HTTP verification script.
 
-**Trade-offs:** JSON persistence is suitable for one local process, not distributed traffic. Agent evidence is deterministic and does not modify code. Approval identity is user-provided, not authenticated. Rollback cancels release readiness, not infrastructure. Reliability metrics are prototypes, not production SLOs.
+**Assumptions:** One application process owns each data directory. Source and templates are trusted. Requirements are limited to analytics, expiration and HTTPS-only policies. Operator and reviewer keys are held by different people. The controller and generated candidates remain on loopback. SDK/NuGet packages are available or can be restored initially.
 
-**Risks:** Public redirect abuse, unsafe destinations, unauthenticated approval, file durability and crash recovery, no distributed locks, and no sandbox for generated code. Treat this as a local interview prototype.
+**Engineering judgment:** A deterministic generator is predictable, inspectable and runnable without an LLM key, but has deliberately limited scope. Generated candidates execute real code and tests; this is not general AI code synthesis. The system controls output locations and commands, but does not provide an OS-level sandbox. Quarantine revokes local release readiness rather than reverting deployed infrastructure. No automatic deployment occurs.
 
-**Validation:** Run `dotnet test` and manually exercise greenfield/brownfield/ambiguous workflows, retries, replan, rejection, analytics and disable. Record actual results rather than claiming unexecuted tests passed.
+**Validation:** The suite covers actual file persistence, expiration boundaries, concurrent URL operations, branch overlap/join ordering, dependency lineage, changing graphs, clarification, bounded failures, equivalent fallback, stale/self/spoofed approvals, evidence tampering, audit corruption, interrupted execution, API role boundaries, and generated candidate compilation/tests/HTTP behavior. See [VALIDATION.md](VALIDATION.md) for executed results.
 
-**Executed results:** All 9 tests and the documented live HTTP workflow checks passed. See [VALIDATION.md](VALIDATION.md) for the environment, checks, and initial issues corrected.
+**Trade-offs and risks:** Local JSON is suitable for a prototype, not distributed traffic. Role keys authenticate possession, not individual identity. Local hash chains detect divergence but do not defeat privileged disk tampering. Redirect destination abuse/private-network targets remain possible. No general LLM adapter, arbitrary repo refactoring, distributed scheduler, tenant isolation, retention policy or production SLOs are claimed.
 
-**Next production steps:** authenticated approvals, database transactions, real agent/LLM adapters with tool permissions, sandboxed PR generation, CI test execution, OpenTelemetry, durable queue, replay/recovery and threat model.
+**Next production work:** Transactional database and durable queue/leases; managed identity/SSO and TLS; external immutable audit anchoring; VM/container execution isolation, network controls and resource quotas; redirect abuse controls/rate limits; structured agent adapters with restricted tools and PR-only generated changes; CI/release integration and operational telemetry.

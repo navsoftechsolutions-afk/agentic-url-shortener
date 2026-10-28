@@ -1,0 +1,1159 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Agentic URL Shortener",
+    "version": "2.0.0",
+    "description": "Local engineering prototype. Generated candidates are not deployed. Fault injection must be explicitly enabled."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5080"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Service information",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "service": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "docs": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/docs": {
+      "get": {
+        "summary": "API documentation",
+        "responses": {
+          "200": {
+            "description": "HTML documentation",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "OpenAPI contract",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/urls": {
+      "post": {
+        "summary": "Create a short link",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShortLinkResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, evidence, or integrity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "description": "Requires the operator role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUrlRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/urls/{code}/analytics": {
+      "get": {
+        "summary": "Read persisted link analytics",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Analytics"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/urls/{code}": {
+      "delete": {
+        "summary": "Disable a link",
+        "responses": {
+          "204": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "description": "Requires the operator role.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/{code}": {
+      "get": {
+        "summary": "Public redirect with click tracking",
+        "responses": {
+          "302": {
+            "description": "Success",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "description": "Target URL"
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/workflows": {
+      "get": {
+        "summary": "List workflows",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Workflow"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Generate and validate an isolated candidate",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, evidence, or integrity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "description": "Requires the operator role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/metrics": {
+      "get": {
+        "summary": "Reliability and recovery metrics",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metrics"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/workflows/{id}": {
+      "get": {
+        "summary": "Read workflow and review digest",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/workflows/{id}/audit": {
+      "get": {
+        "summary": "Verify and read the audit hash chain",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Audit integrity conflict or legacy workflow",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/workflows/{id}/approval": {
+      "post": {
+        "summary": "Approve or reject exact revision and evidence",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, evidence, or integrity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "description": "Requires the reviewer role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/workflows/{id}/replan": {
+      "post": {
+        "summary": "Quarantine old candidate and regenerate from changed requirements",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, evidence, or integrity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "description": "Requires the operator role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplanRequest"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/workflows/{id}/artifacts/{path}": {
+      "get": {
+        "summary": "Download a current-revision evidence file",
+        "responses": {
+          "200": {
+            "description": "Evidence file; path may contain slashes",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key"
+          },
+          "403": {
+            "description": "Authenticated identity lacks the required role"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "CreateUrlRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "expiresInDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365,
+            "nullable": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ShortLinkResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{10}$"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "shortUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "code",
+          "url",
+          "shortUrl"
+        ]
+      },
+      "Analytics": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "clicks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "dailyClicks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "WorkflowRequest": {
+        "type": "object",
+        "properties": {
+          "requirement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "scenario": {
+            "type": "string",
+            "enum": [
+              "greenfield",
+              "brownfield",
+              "ambiguous"
+            ],
+            "default": "greenfield"
+          },
+          "simulateTestFailure": {
+            "type": "boolean",
+            "default": false
+          },
+          "failureMode": {
+            "type": "string",
+            "enum": [
+              "none",
+              "persistent-tests",
+              "runner-unavailable"
+            ],
+            "default": "none"
+          }
+        },
+        "required": [
+          "requirement"
+        ]
+      },
+      "ReplanRequest": {
+        "type": "object",
+        "properties": {
+          "requirement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "requirement",
+          "revision"
+        ]
+      },
+      "ApprovalRequest": {
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "evidenceHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "reviewer": {
+            "type": "string",
+            "description": "Optional; must equal the authenticated reviewer identity."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "approved",
+          "revision",
+          "evidenceHash",
+          "reason"
+        ]
+      },
+      "NodeState": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "description": "Pending=0, Running=1, WaitingApproval=2, Completed=3, Failed=4, Skipped=5"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "output": {
+            "type": "string",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "startedUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endedUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AuditEvent": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer"
+          },
+          "atUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "actor": {
+            "type": "string"
+          },
+          "event": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "previousHash": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      },
+      "StageEvidence": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "integer"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "inputs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "files": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Incident": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "failedUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recoveredUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "outcome": {
+            "type": "string"
+          }
+        }
+      },
+      "RevisionSnapshot": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "integer"
+          },
+          "requirement": {
+            "type": "string"
+          },
+          "reviewDigest": {
+            "type": "string",
+            "nullable": true
+          },
+          "artifacts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StageEvidence"
+            }
+          }
+        }
+      },
+      "Workflow": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "requirement": {
+            "type": "string"
+          },
+          "scenario": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Running",
+              "WaitingClarification",
+              "WaitingApproval",
+              "Completed",
+              "Rejected",
+              "SafeStopped"
+            ]
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "simulateTestFailure": {
+            "type": "boolean"
+          },
+          "failureMode": {
+            "type": "string"
+          },
+          "failureConsumed": {
+            "type": "boolean"
+          },
+          "startedUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "nodes": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NodeState"
+            }
+          },
+          "audit": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          },
+          "artifacts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StageEvidence"
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevisionSnapshot"
+            }
+          },
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Incident"
+            }
+          },
+          "reviewDigest": {
+            "type": "string",
+            "nullable": true
+          },
+          "approvedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "rejectionReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "retries": {
+            "type": "integer"
+          },
+          "rollbacks": {
+            "type": "integer"
+          },
+          "fallbacks": {
+            "type": "integer"
+          }
+        }
+      },
+      "Metrics": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "legacyWorkflows": {
+            "type": "integer"
+          },
+          "completed": {
+            "type": "integer"
+          },
+          "retryFrequency": {
+            "type": "integer"
+          },
+          "rollbackFrequency": {
+            "type": "integer"
+          },
+          "fallbackFrequency": {
+            "type": "integer"
+          },
+          "recoveredIncidents": {
+            "type": "integer"
+          },
+          "unrecoveredIncidents": {
+            "type": "integer"
+          },
+          "successRate": {
+            "type": "number"
+          },
+          "meanTimeToRecoveryMs": {
+            "type": "number"
+          },
+          "meanEndToEndLatencyMs": {
+            "type": "number"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "AuditResponse": {
+        "type": "object",
+        "properties": {
+          "integrity": {
+            "type": "string",
+            "enum": [
+              "verified"
+            ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          }
+        }
+      }
+    }
+  }
+}

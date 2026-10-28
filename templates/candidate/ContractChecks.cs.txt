@@ -1,0 +1,78 @@
+using AgenticUrlShortener;
+
+public static class ContractChecks
+{
+    private static void Check(bool condition, string message)
+    { if (!condition) throw new InvalidOperationException(message); }
+    private static string Temporary() => Path.Combine(Path.GetTempPath(), "candidate-checks", Guid.NewGuid().ToString("N"));
+    private static void Reject(Action action)
+    {
+        try { action(); }
+        catch (ArgumentException) { return; }
+        throw new InvalidOperationException("Expected validation rejection.");
+    }
+    public static async Task PolicyAndValidation()
+    {
+        Check(!UrlService.IsSafeUrl("javascript:alert(1)"), "Reject javascript scheme.");
+        Check(!UrlService.IsSafeUrl("https://user:password@example.com"), "Reject embedded credentials.");
+        FeaturePolicy.Validate(new CreateUrlRequest("https://example.com"));
+        if (FeaturePolicy.HttpsOnly) Reject(() => FeaturePolicy.Validate(new CreateUrlRequest("http://example.com")));
+        else FeaturePolicy.Validate(new CreateUrlRequest("http://example.com"));
+        if (!FeaturePolicy.Expiration) Reject(() => FeaturePolicy.Validate(new CreateUrlRequest("https://example.com", 30)));
+        var directory = Temporary();
+        try
+        {
+            var service = new UrlService(new JsonStore<UrlData>(Path.Combine(directory, "urls.json")));
+            foreach (var days in new[] { 0, 366 })
+            {
+                var rejected = false;
+                try { await service.Create(new CreateUrlRequest("https://example.com", days)); }
+                catch (ArgumentException) { rejected = true; }
+                Check(rejected, "Reject invalid expiry range.");
+            }
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+    public static async Task ExpiryPersistenceAndDisable()
+    {
+        var directory = Temporary();
+        try
+        {
+            var path = Path.Combine(directory, "urls.json");
+            var clock = new Clock();
+            var service = new UrlService(new JsonStore<UrlData>(path), clock);
+            var link = await service.Create(new CreateUrlRequest("https://example.com", FeaturePolicy.Expiration ? 1 : null));
+            Check(await service.Resolve(link.Code) != null, "New link resolves.");
+            var reloaded = new UrlService(new JsonStore<UrlData>(path), clock);
+            if (FeaturePolicy.Expiration)
+            {
+                clock.Now = clock.Now.AddDays(1);
+                Check(await reloaded.Resolve(link.Code) == null, "Expired link cannot redirect at its boundary.");
+            }
+            else Check(await reloaded.Resolve(link.Code) != null, "Non-expiring link survives reload.");
+            Check(await reloaded.Disable(link.Code), "Disable persists.");
+            Check(await reloaded.Resolve(link.Code) == null, "Disabled link cannot redirect.");
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+    public static async Task ConcurrentClicksAndUniqueCodes()
+    {
+        var directory = Temporary();
+        try
+        {
+            var store = new JsonStore<UrlData>(Path.Combine(directory, "urls.json"));
+            var service = new UrlService(store);
+            var links = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => service.Create(new CreateUrlRequest("https://example.com"))));
+            Check(links.All(l => l.Code.Length == 10) && links.Select(l => l.Code).Distinct().Count() == 16, "Codes are unique.");
+            await Task.WhenAll(Enumerable.Range(0, 24).Select(_ => service.Resolve(links[0].Code)));
+            Check(await store.Read(d => d.Links.Single(l => l.Code == links[0].Code).Clicks) == 24, "Concurrent clicks are not lost.");
+            Check(await store.Read(d => d.Clicks.Count) == 24, "Click events match persisted total.");
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+    private class Clock : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+}

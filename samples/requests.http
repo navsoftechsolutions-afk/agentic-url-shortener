@@ -1,15 +1,54 @@
 @host = http://localhost:5080
+# Replace these local placeholders with the distinct generated credentials.
+@operatorKey = COPY_OPERATOR_KEY
+@reviewerKey = COPY_REVIEWER_KEY
+@workflowId = COPY_WORKFLOW_ID
+@reviewDigest = COPY_REVIEW_DIGEST
+@revision = 1
+
+### Public API specification
+GET {{host}}/openapi.json
+
 ### Create short URL
 POST {{host}}/api/urls
+X-Api-Key: {{operatorKey}}
 Content-Type: application/json
 
 {"url":"https://example.com","expiresInDays":30}
 
-### Start agent workflow
+### Start real generation and validation (fault injection must be enabled)
 POST {{host}}/api/workflows
+X-Api-Key: {{operatorKey}}
 Content-Type: application/json
 
-{"requirement":"Create a short URL service with analytics","scenario":"greenfield","simulateTestFailure":true}
+{"requirement":"Build HTTPS-only links with expiration and click analytics","scenario":"greenfield","simulateTestFailure":true}
 
-### Metrics
+### Inspect current revision and digest
+GET {{host}}/api/workflows/{{workflowId}}
+X-Api-Key: {{reviewerKey}}
+
+### Inspect generated code
+GET {{host}}/api/workflows/{{workflowId}}/artifacts/app/FeaturePolicy.cs
+X-Api-Key: {{reviewerKey}}
+
+### Verify journal
+GET {{host}}/api/workflows/{{workflowId}}/audit
+X-Api-Key: {{reviewerKey}}
+
+### Approve exact evidence with separate reviewer credential
+POST {{host}}/api/workflows/{{workflowId}}/approval
+X-Api-Key: {{reviewerKey}}
+Content-Type: application/json
+
+{"approved":true,"revision":{{revision}},"evidenceHash":"{{reviewDigest}}","reason":"Reviewed generated source, executed tests, and risks"}
+
+### Replan current revision before completion
+POST {{host}}/api/workflows/{{workflowId}}/replan
+X-Api-Key: {{operatorKey}}
+Content-Type: application/json
+
+{"requirement":"Add expiration and click analytics","revision":{{revision}}}
+
+### Reliability metrics
 GET {{host}}/api/workflows/metrics
+X-Api-Key: {{operatorKey}}

@@ -1,0 +1,7 @@
+using Xunit;
+public class ContractTests
+{
+    [Fact] public Task PolicyAndValidation() => ContractChecks.PolicyAndValidation();
+    [Fact] public Task ExpiryPersistenceAndDisable() => ContractChecks.ExpiryPersistenceAndDisable();
+    [Fact] public Task ConcurrentClicksAndUniqueCodes() => ContractChecks.ConcurrentClicksAndUniqueCodes();
+}

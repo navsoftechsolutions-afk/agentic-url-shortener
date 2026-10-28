@@ -1,0 +1,44 @@
+name: Build and validate
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '8.0.x'
+      - name: Unit, HTTP integration, and real generated-candidate tests
+        run: dotnet test tests/AgenticUrlShortener.Tests/AgenticUrlShortener.Tests.csproj
+      - name: Reproduce scenarios and failure controls over HTTP
+        shell: bash
+        env:
+          ENABLE_FAILURE_INJECTION: 'true'
+        run: |
+          dotnet run --no-build --project src/AgenticUrlShortener --urls http://localhost:5080 > "$RUNNER_TEMP/agentic-server.log" 2>&1 &
+          agentic_server_pid=$!
+          trap 'kill "$agentic_server_pid" 2>/dev/null || true' EXIT
+          for ((attempt=0; attempt<60; attempt++)); do
+            if curl -fsS http://localhost:5080/ > /dev/null; then break; fi
+            sleep 1
+          done
+          python3 scripts/verify_workflow.py --failure-demos --output "$RUNNER_TEMP/workflow-evidence.json"
+      - name: Verify generated workspaces cannot enter controller builds or publish output
+        run: |
+          dotnet publish src/AgenticUrlShortener --no-restore --output "$RUNNER_TEMP/agentic-publish"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          output = Path(os.environ['RUNNER_TEMP']) / 'agentic-publish'
+          forbidden = {'access-keys.json', 'workflows.json', 'urls.json', 'Candidate.csproj'}
+          assert not any(p.name in forbidden or 'workspaces' in p.parts for p in output.rglob('*'))
+          PY

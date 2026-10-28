@@ -1,0 +1,28 @@
+using AgenticUrlShortener;
+var builder = WebApplication.CreateBuilder(args);
+if (builder.Configuration["urls"] == null) builder.WebHost.UseUrls("http://localhost:5081");
+var data = Environment.GetEnvironmentVariable("CANDIDATE_DATA_DIR") ?? Path.Combine(builder.Environment.ContentRootPath, "data");
+builder.Services.AddSingleton(new JsonStore<UrlData>(Path.Combine(data, "urls.json")));
+builder.Services.AddSingleton<UrlService>();
+var app = builder.Build();
+app.MapGet("/openapi.json", () => Results.File(Path.Combine(AppContext.BaseDirectory, "openapi.json"), "application/json"));
+app.MapGet("/", () => Results.Ok(new { Service = "Generated URL shortener", FeaturePolicy.Analytics, FeaturePolicy.Expiration, FeaturePolicy.HttpsOnly }));
+app.MapPost("/api/urls", async (CreateUrlRequest request, UrlService urls, HttpContext context) =>
+{
+    try
+    {
+        FeaturePolicy.Validate(request);
+        var link = await urls.Create(request);
+        return Results.Created($"/{link.Code}", new { link.Code, link.Url, link.ExpiresUtc,
+            ShortUrl = $"{context.Request.Scheme}://{context.Request.Host}/{link.Code}" });
+    }
+    catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
+});
+if (FeaturePolicy.Analytics)
+    app.MapGet("/api/urls/{code}/analytics", async (string code, UrlService urls) =>
+        await urls.Analytics(code) is { } value ? Results.Ok(value) : Results.NotFound());
+app.MapDelete("/api/urls/{code}", async (string code, UrlService urls) =>
+    await urls.Disable(code) ? Results.NoContent() : Results.NotFound());
+app.MapGet("/{code}", async (string code, UrlService urls) =>
+    await urls.Resolve(code) is { } link ? Results.Redirect(link.Url) : Results.NotFound());
+app.Run();

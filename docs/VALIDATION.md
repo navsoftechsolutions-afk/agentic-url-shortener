@@ -1,29 +1,46 @@
-# Validation results
+# Executed validation results
 
-Verified on 2026-10-28 with .NET SDK 8.0.427 on macOS ARM64.
+Verified on 2026-10-28 with .NET SDK 8.0.427 / runtime 8.0.33 on macOS ARM64.
 
-## Automated tests
-
-Command:
+## Repository test suite
 
 ```bash
 dotnet test tests/AgenticUrlShortener.Tests/AgenticUrlShortener.Tests.csproj
 ```
 
-Result: **9 passed, 0 failed, 0 skipped**.
+Result: **40 passed, 0 failed, 0 skipped**. The real candidate suites executed by integration tests are additional nested tool runs, not extra tests counted in the 40-test total.
 
-The initial run exposed a compiler error in the conditional requirements arrays and a stale-object assertion in the URL lifecycle test. The arrays now have explicit types. The lifecycle test checks the resolved link, persisted click count, and persisted click event.
+Coverage includes URL scheme/credential rejection, expiry bounds and exact expiry time, state reload, unique concurrent creation and lossless click accounting; actual concurrent DAG branches and joins; private stage-input snapshots; dependency hashes; changed brownfield graphs and revision history; clarification; retry/recovery timing; retry exhaustion; restricted fallback; rejection/quarantine; authenticated role separation and spoof/stale/self-approval prevention; evidence/journal corruption; restart recovery; candidate compilation and xUnit execution; a running candidate's HTTP endpoints and OpenAPI schema; binary tampering and unexpected source hidden in data directories.
 
-## Live HTTP checks
+The real tool-failure regression asserts that a failing candidate cannot use fallback to pass review. The fallback integration test actually runs a package-free console verifier using the same three contract-check methods as the generated xUnit suite.
 
-Started the app with the README command on `http://localhost:5080` and exercised the documented endpoints with HTTP requests and assertions:
+## Reproducible live HTTP demonstration
 
-- `/docs`: HTTP 200 with the endpoint directory.
-- URL lifecycle: HTTP 201 creation, 10-character code, HTTP 302 redirect, one recorded click in analytics, HTTP 204 disable, then HTTP 404 on redirect.
-- Greenfield workflow with an injected test failure: `WaitingApproval`, release pending with no release artifact, one retry, two test attempts, and error/retry/approval-required audit events.
-- Approval: the named reviewer was recorded; the workflow became `Completed`, all DAG nodes completed, and the completed state was returned by a subsequent GET.
-- Brownfield replan: revision advanced to 2, rollback count increased, and the workflow required approval again with release still pending.
-- Ambiguous workflow: clarification was recorded; rejection produced `Rejected`, recorded a rollback, and left release pending with no release artifact.
-- Metrics: three workflows, one completed, two retries, and two rollbacks. The remaining workflows were one awaiting approval and one rejected.
+With the controller running and fault injection explicitly enabled:
 
-The workflow's engineering outputs remain deterministic simulations as described in the README. The test-suite and HTTP results above were actually executed. Generated local JSON data and build output are excluded from Git.
+```bash
+python3 scripts/verify_workflow.py --failure-demos --output /tmp/agentic-workflow-evidence.json
+```
+
+Executed checks:
+
+- Public docs/schema and authenticated management access; anonymous management requests return 401.
+- Real URL creation, HTTP 302 redirect, persisted click analytics, disable, and HTTP 404 afterward.
+- Greenfield generation of HTTPS-only/expiration/analytics code, execution of three generated contract tests, one injected retry, pause at approval, blocked operator approval, and completion after a separate reviewer's decision.
+- Brownfield requirement change, compatibility-node insertion, archived old evidence, blocked stale approval, regeneration/testing, and revision-2 completion.
+- Ambiguous requirement stops before implementation; explicit clarification regenerates tested code; rejection quarantines the candidate.
+- Persistent injected failure exhausts three attempts, records two retries, safely stops, and quarantines. Explicit replan clears the fault and requires fresh validation.
+- Primary-runner outage exhausts retries, executes the equivalent package-free verifier, and records fallback/recovery.
+- Metrics expose recovered/unrecovered incidents and measured failure-to-recovery intervals.
+
+[DEMO_RESULTS.json](DEMO_RESULTS.json) records credential-free workflow snapshots, actual test counters, audit event types and cumulative metrics from the executed demonstration. Snapshots capture each demonstrated state; a persistent-failure workflow is subsequently replanned during the script. Local state includes prior demonstration runs, so cumulative totals need not equal the number of snapshots.
+
+## Build and publication boundary
+
+A release `dotnet publish` succeeded. Its output was checked to exclude access keys, URL/workflow state and generated candidate workspaces. The controller also rebuilt successfully with generated applications present under its default data directory. Its project file explicitly limits compile/content inputs, preventing those applications from entering the controller build or publication.
+
+GitHub Actions repeats the test suite, the HTTP demonstration, and the build/publication regression on pushes and pull requests. Generated state and credentials are ignored by Git and are not committed.
+
+## Practical limits
+
+The workflow generates real files and executes real tools. Requirement interpretation and code composition remain deterministic and limited to the documented features. Source assertions are narrow checks, not a full security analyzer. Candidates are local review artifacts with no authentication; execution is not OS-sandboxed; the JSON store is single-process; and local audit chains do not defeat privileged rewriting of both state and journal. No production deployment was performed.
